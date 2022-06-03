@@ -1,0 +1,9 @@
+; 间接绝对远调用
+
+section call_test vstart=0x900
+call far [addr]
+jmp $
+addr dw far_proc, 0 ; 连续定义两个word
+far_proc:
+    mov ax, 0x1234
+    retf
