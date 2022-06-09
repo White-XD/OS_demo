@@ -1,6 +1,7 @@
 %include "boot.inc"
 section loader vstart=LOADER_BASE_ADDR
 ;输出背景色绿色，前景色红色，并且跳动的字符串“My First MBR”
+;没有清屏是因为写的字符串比mbr里的长，直接覆盖掉了
 mov byte [gs:0x00],'M'
 mov byte [gs:0x01],0xCF
 mov byte [gs:0x02],'y'
