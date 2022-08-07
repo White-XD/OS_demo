@@ -18,8 +18,8 @@ DATA_STACK_DESC: dd 0x0000FFFF
 VIDEO_DESC: dd 0x8000_0007 ; limit=(0xbffff-0xb8000)/4k=0x7
             dd DESC_VIDEO_HIGH4
 
-GDT_SIZE equ $-GDT_BASE
-GDT_LIMIT equ GDT_SIZE-1
+GDT_SIZE equ $-GDT_BASE ; 0x20
+GDT_LIMIT equ GDT_SIZE-1 ; 0x1F
 
 times 60 dq 0; Define Quad word(8 bytes)，预留60个描述符空位
 
