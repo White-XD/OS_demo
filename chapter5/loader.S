@@ -272,7 +272,7 @@ setup_page:
 
     sub eax, 0x1000
     ; 使最后一个目录项指向页目录表自己的地址
-    ; 为了将来能够动态操作页表
+    ; 为了将来能够动态操作页表（通过虚拟地址访问页表/页目录表）
     mov [PAGE_DIR_TABLE_POS + 4092], eax
 
 ; 开始创建页表项(PTE)
@@ -287,7 +287,8 @@ setup_page:
     loop .create_pte
 
 ; 继续内核其他页表的PDE
-; 目的是为了以最简单的方式实现内核在用户进程间的共享
+; 目的是为了以最简单的方式实现内核在用户进程间的共享，即：
+; 提前把内核的所有页目录项定下来，也就是提前把内核的页表固定下来
     mov eax, PAGE_DIR_TABLE_POS
     add eax, 0x2000 ; 此时eax为第二个页表的位置
     or eax, PG_US_U | PG_RW_W | PG_P ; 页目录项的属性US、RW和P都是1
