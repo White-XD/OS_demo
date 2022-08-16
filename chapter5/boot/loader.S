@@ -247,10 +247,10 @@ p_mode_start:
     ; 保险起见，刷新也可以
     jmp SELECTOR_CODE:enter_kernel
 
-    enter_kernel:
-        call kernel_init
-        mov esp, 0xc009f000 ; 选择0x9f000既接近最大可用地址0x9fbff，并且能满足pcb的4KB对齐的要求
-        jmp KERNEL_ENTRY_POINT ; 用地址0x1500访问测试
+enter_kernel:
+    call kernel_init
+    mov esp, 0xc009f000 ; 选择0x9f000既接近最大可用地址0x9fbff，并且能满足pcb的4KB对齐的要求
+    jmp KERNEL_ENTRY_POINT ; 用地址0x1500访问测试
 
 ; 将kernel.bin中的segment拷贝到编译的地址
 kernel_init:
@@ -263,10 +263,11 @@ kernel_init:
     mov ebx, [KERNEL_BIN_BASE_ADDR+28] ; 偏移文件开始部分28字节的地方是e_phoff，表示第一个program header在文件中的偏移量，其值应该是0x34 = 52
 
     add ebx, KERNEL_BIN_BASE_ADDR
-    mov ecx, [KERNEL_BIN_BASE_ADDR+44] ; 偏移文件开始部分44字节的地方是e_phnum，表示有几个program header，本例中为0x5
+    mov cx, [KERNEL_BIN_BASE_ADDR+44] ; 偏移文件开始部分44字节的地方是e_phnum，表示有几个program header，本例中为0x5
+    ; 注意这里不能用ecx，因为e_phnum是2字节大小的值
 
 .each_segment:
-    cmp byte[ebx+0], PT_NULL ; 若p_type等于PT_NULL，说明此program header未使用
+    cmp byte [ebx+0], PT_NULL ; 若p_type等于PT_NULL，说明此program header未使用
     je .PT_NULL
 
     ; 为函数memcpy压入参数，参数是从右往左依次压入
