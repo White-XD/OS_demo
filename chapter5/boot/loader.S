@@ -196,61 +196,61 @@ p_mode_start:
     mov byte [gs:168], 'd'
     mov byte [gs:170], 'e'
 
-; 加载kernel
-mov eax, KERNEL_START_SECTOR ; kernel.bin所在扇区号
-mov ebx, KERNEL_BIN_BASE_ADDR ; 写入的位置
+    ; 加载kernel
+    mov eax, KERNEL_START_SECTOR ; kernel.bin所在扇区号
+    mov ebx, KERNEL_BIN_BASE_ADDR ; 写入的位置
 
-mov ecx, 200 ; 读入的扇区数
+    mov ecx, 200 ; 读入的扇区数
 
-call rd_disk_m_32
+    call rd_disk_m_32
 
 
-; 创建页目录和页表并初始化页内存位图
-call setup_page
+    ; 创建页目录和页表并初始化页内存位图
+    call setup_page
 
-; 要将描述符表地址及偏移量写入内存gdt_ptr，一会用新地址重新加载
-sgdt [gdt_ptr] ; 储存到原来gdt所有的位置
+    ; 要将描述符表地址及偏移量写入内存gdt_ptr，一会用新地址重新加载
+    sgdt [gdt_ptr] ; 储存到原来gdt所有的位置
 
-; 将gdt描述符中视频段描述符中的段基址+0xc0000000
-mov ebx, [gdt_ptr+2]
-or dword [ebx+0x18+4], 0xc0000000
-; 视频段是第3个段描述符，每个描述符是8字节，故0x18
-; 段描述符的高4字节的最高位是段基址的第31-24位
+    ; 将gdt描述符中视频段描述符中的段基址+0xc0000000
+    mov ebx, [gdt_ptr+2]
+    or dword [ebx+0x18+4], 0xc0000000
+    ; 视频段是第3个段描述符，每个描述符是8字节，故0x18
+    ; 段描述符的高4字节的最高位是段基址的第31-24位
 
-; 将gdt的基址加上0xc0000000使其成为内核所在的高地址
-add dword[gdt_ptr+2], 0xc0000000
+    ; 将gdt的基址加上0xc0000000使其成为内核所在的高地址
+    add dword[gdt_ptr+2], 0xc0000000
 
-add esp, 0xc0000000 ; 将栈指针同样映射到内核地址
+    add esp, 0xc0000000 ; 将栈指针同样映射到内核地址
 
-; 把页目录地址赋给cr3
-mov eax, PAGE_DIR_TABLE_POS
-mov cr3, eax
+    ; 把页目录地址赋给cr3
+    mov eax, PAGE_DIR_TABLE_POS
+    mov cr3, eax
 
-; 打开cr0的pg位（第31位）
-mov eax, cr0
-or eax, 0x80000000
-mov cr0, eax
+    ; 打开cr0的pg位（第31位）
+    mov eax, cr0
+    or eax, 0x80000000
+    mov cr0, eax
 
-; 在开启分页后，用gdt新的地址重新加载
-lgdt [gdt_ptr]
+    ; 在开启分页后，用gdt新的地址重新加载
+    lgdt [gdt_ptr]
 
-mov byte [gs:160], 'P'
-mov byte [gs:162], '&'
-mov byte [gs:164], 'V'
-mov byte [gs:166], ' '
-mov byte [gs:168], 'm'
-mov byte [gs:170], 'o'
-mov byte [gs:172], 'd'
-mov byte [gs:174], 'e'
+    mov byte [gs:160], 'P'
+    mov byte [gs:162], '&'
+    mov byte [gs:164], 'V'
+    mov byte [gs:166], ' '
+    mov byte [gs:168], 'm'
+    mov byte [gs:170], 'o'
+    mov byte [gs:172], 'd'
+    mov byte [gs:174], 'e'
 
-; 由于一直在32位下，原则上不需要强制刷新流水线
-; 保险起见，刷新也可以
-jmp SELECTOR_CODE:enter_kernel
+    ; 由于一直在32位下，原则上不需要强制刷新流水线
+    ; 保险起见，刷新也可以
+    jmp SELECTOR_CODE:enter_kernel
 
-enter_kernel:
-    call kernel_init
-    mov esp, 0xc009f000 ; 选择0x9f000既接近最大可用地址0x9fbff，并且能满足pcb的4KB对齐的要求
-    jmp KERNEL_ENTRY_POINT ; 用地址0x1500访问测试
+    enter_kernel:
+        call kernel_init
+        mov esp, 0xc009f000 ; 选择0x9f000既接近最大可用地址0x9fbff，并且能满足pcb的4KB对齐的要求
+        jmp KERNEL_ENTRY_POINT ; 用地址0x1500访问测试
 
 ; 将kernel.bin中的segment拷贝到编译的地址
 kernel_init:
