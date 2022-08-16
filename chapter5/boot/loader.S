@@ -250,6 +250,16 @@ p_mode_start:
 enter_kernel:
     call kernel_init
     mov esp, 0xc009f000 ; 选择0x9f000既接近最大可用地址0x9fbff，并且能满足pcb的4KB对齐的要求
+    mov byte [gs:320], 'I'
+    mov byte [gs:322], 'n'
+    mov byte [gs:324], ' '
+    mov byte [gs:326], 'K'
+    mov byte [gs:328], 'e'
+    mov byte [gs:330], 'r'
+    mov byte [gs:332], 'n'
+    mov byte [gs:334], 'e'
+    mov byte [gs:336], 'l'
+
     jmp KERNEL_ENTRY_POINT ; 用地址0x1500访问测试
 
 ; 将kernel.bin中的segment拷贝到编译的地址
