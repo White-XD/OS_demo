@@ -196,6 +196,14 @@ p_mode_start:
     mov byte [gs:168], 'd'
     mov byte [gs:170], 'e'
 
+; 加载kernel
+mov eax, KERNEL_START_SECTOR ; kernel.bin所在扇区号
+mov ebx, KERNEL_BIN_BASE_ADDR ; 写入的位置
+
+mov ecx, 200 ; 读入的扇区数
+
+call rd_disk_m_32
+
 
 ; 创建页目录和页表并初始化页内存位图
 call setup_page
@@ -235,9 +243,67 @@ mov byte [gs:170], 'o'
 mov byte [gs:172], 'd'
 mov byte [gs:174], 'e'
 
-jmp $
+; 由于一直在32位下，原则上不需要强制刷新流水线
+; 保险起见，刷新也可以
+jmp SELECTOR_CODE:enter_kernel
 
+enter_kernel:
+    call kernel_init
+    mov esp, 0xc009f000 ; 选择0x9f000既接近最大可用地址0x9fbff，并且能满足pcb的4KB对齐的要求
+    jmp KERNEL_ENTRY_POINT ; 用地址0x1500访问测试
 
+; 将kernel.bin中的segment拷贝到编译的地址
+kernel_init:
+    xor eax, eax
+    xor ebx, ebx ; ebx记录程序头表地址
+    xor ecx, ecx ; cx记录程序头表中的program header数量
+    xor edx, edx ; dx记录program header大小，即e_phentsize
+
+    mov dx, [KERNEL_BIN_BASE_ADDR+42] ; 偏移42字节处的属性是e_phentsize，表示program header table entry的大小，即0x20=32 byte
+    mov ebx, [KERNEL_BIN_BASE_ADDR+28] ; 偏移文件开始部分28字节的地方是e_phoff，表示第一个program header在文件中的偏移量，其值应该是0x34 = 52
+
+    add ebx, KERNEL_BIN_BASE_ADDR
+    mov ecx, [KERNEL_BIN_BASE_ADDR+44] ; 偏移文件开始部分44字节的地方是e_phnum，表示有几个program header，本例中为0x5
+
+.each_segment:
+    cmp byte[ebx+0], PT_NULL ; 若p_type等于PT_NULL，说明此program header未使用
+    je .PT_NULL
+
+    ; 为函数memcpy压入参数，参数是从右往左依次压入
+    ; 函数原型类似于memcpy(dst, src, size)
+    push dword [ebx+16] ; program header中偏移16字节的地方是p_filesz，押入memcpy()的第三个参数：size
+
+    mov eax, [ebx+4] ; 距离program header偏移量为4字节的位置是p_offset
+    add eax, KERNEL_BIN_BASE_ADDR ; 加上kernel.bin被加载到的物理地址，eax为该段的物理地址
+    push eax ; 押入函数memcpy的第二个参数：源地址
+    push dword [ebx+8] ; 偏移程序头8字节的位置时p_vaddr，押入函数memcpy的第一个参数：目的地址
+
+    call mem_cpy ; 调用mem_cpy完成段复制
+    add esp, 12 ; 清理栈中押入的三个参数
+
+.PT_NULL:
+    add ebx, edx ; edx为program header的大小，即e_phentsize，在此ebx指向下一个program header
+    loop .each_segment
+    ret
+
+; 逐字节拷贝mem_cpy(dst, src, size)
+; 输入：栈中的三个参数（dst, src, size）
+; 输出：无
+mem_cpy:
+    cld
+    push ebp ; 不确定外层是否有使用，但是保险起见还是入栈保存
+    mov ebp, esp
+    push ecx ; rep指令用到了ecx，但ecx对外层段的循环还有用，故先入栈备份
+    mov edi, [ebp+8] ; dst
+    mov esi, [ebp+12] ; src
+    mov ecx, [ebp+16] ; size
+
+    rep movsb ; 逐字节拷贝
+
+    ; 恢复环境
+    pop ecx
+    pop ebp
+    ret
 
 
 ;创建页目录和页表
