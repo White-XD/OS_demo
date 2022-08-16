@@ -65,7 +65,7 @@ mov byte [gs:0x17],0xBF
 ;准备读如loader.bin
 mov eax, LOADER_START_SECTOR ;起始扇区LBA地址
 mov bx, LOADER_BASE_ADDR ;写入的地址
-mov cx, 3 ;待读入的扇区数，由于loader.bin大于512B，所以直接选择读如4个扇区
+mov cx, 4 ;待读入的扇区数，由于loader.bin大于512B，所以直接选择读如4个扇区
 call rd_disk_m_16
 
 ; 跳转至loader
