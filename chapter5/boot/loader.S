@@ -417,10 +417,10 @@ rd_disk_m_32:
     mov cx, ax
     mov dx, 0x1f0
 
-.go_on_read:
+.go_on_read: ; 注意，这里应该使用ebx，因为我们处于保护模式！
     in ax, dx
-    mov [bx], ax
-    add bx, 2
+    mov [ebx], ax
+    add ebx, 2
     loop .go_on_read
     ret
 
